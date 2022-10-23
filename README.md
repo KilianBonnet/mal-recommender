@@ -1,4 +1,7 @@
 # My anime list recommender
+## Requirements
+- [Pandas](https://pypi.org/project/pandas/)
+
 ## Datasets
 ### [AnimeList.csv](https://www.kaggle.com/datasets/azathoth42/myanimelist?resource=download&select=AnimeList.csv)
 AnimeList.csv contains list of anime, with title, title synonyms, genre, studio, licensor, producer, duration, rating, 
