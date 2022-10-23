@@ -31,6 +31,8 @@ def get_mal_data():
 def get_mal_basic_data():
     anime_list_data = pd.read_csv(anime_list_data_path)
     dataset = dict()
+    _labeled_data = dict()
+
     for anime_data in anime_list_data.iterrows():
         anime = anime_data[1]
         dataset[anime["anime_id"]] = [anime["episodes"],
@@ -40,10 +42,13 @@ def get_mal_basic_data():
                                       anime["members"],
                                       anime["favorites"],
                                       ]
-    return dataset
+        _labeled_data[anime["anime_id"]] = anime["title"]
+
+    return _labeled_data, dataset
 
 
 def get_recommendation_dataset(_data):
+    _data = _data.copy()
     user_mal_data = pd.read_csv(user_mal_data_path)
 
     _x_train = []
@@ -63,8 +68,8 @@ def get_recommendation_dataset(_data):
 
 
 if __name__ == '__main__':
-    data = get_mal_basic_data()
-    x_train, y_train, x_test = get_recommendation_dataset(data.copy())
+    labeled_data, data = get_mal_basic_data()
+    x_train, y_train, x_test = get_recommendation_dataset(data)
 
     print("nb of train data:", len(x_train))
     print("dim of the train data:", len(x_train[0]))
@@ -72,6 +77,18 @@ if __name__ == '__main__':
 
     lr = LinearRegression()
     lr.fit(x_train, y_train)
-    print(lr.predict([data[32901]]))
+    predict = lr.predict(x_test)
 
+    labeled_predict = []
+    data_keys = list(labeled_data.keys())
+    for i in range(0, len(predict)):
+        labeled_predict.append([labeled_data[data_keys[i]], predict[i]])
 
+    labeled_predict = sorted(labeled_predict, key=lambda x: (-x[1], x[0]))
+
+    print("============================================")
+    print("Best fitting anime:")
+
+    for i in range(0, 10):
+        best_fitting_anime = labeled_predict[i]
+        print("{}, score {}".format(best_fitting_anime[0], best_fitting_anime[1]))
