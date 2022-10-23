@@ -1,7 +1,7 @@
 import pandas as pd
 
 anime_list_data_path = "./datasets/AnimeList.csv"
-user_mal_data_path = "./datasets/Estoult.csv"
+user_mal_data_path = "./datasets/UserMAL.csv"
 
 
 def get_mal_data():
