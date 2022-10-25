@@ -1,6 +1,10 @@
+import operator
+
 import numpy as np
 import pandas as pd
 from sklearn import svm
+from sklearn.metrics import accuracy_score
+from sklearn.multiclass import OneVsOneClassifier
 
 anime_list_data_path = "./datasets/AnimeList.csv"
 user_mal_data_path = "./datasets/UserMAL.csv"
@@ -29,6 +33,26 @@ def _get_mal_data():
     return dataset
 
 
+def get_anime_date(anime):
+    date_string = anime["aired_string"]
+    if date_string == "Not available":
+        return 0
+
+    year = ""
+    for c in date_string:
+        if c.isdigit():
+            year += c
+            if len(year) == 4:
+                break
+        else:
+            year = ""
+
+    if len(year) == 4:
+        return int(year)
+
+    return 0
+
+
 def extract_mal_csv():
     print("Extracting MyAnimeList csv...")
 
@@ -38,15 +62,17 @@ def extract_mal_csv():
 
     for anime_data in anime_list_data.iterrows():
         anime = anime_data[1]
+        anime_date = get_anime_date(anime)
 
         # Adding only anime rated by more than MIN_NB_RATE people
-        if anime["scored_by"] >= MIN_NB_RATE:
+        if anime["scored_by"] >= MIN_NB_RATE and anime_date != 0:
             dataset[anime["anime_id"]] = [anime["episodes"],
                                           anime["score"],
                                           anime["scored_by"],
                                           anime["popularity"],
                                           anime["members"],
                                           anime["favorites"],
+                                          anime_date
                                           ]
             _labeled_data[anime["anime_id"]] = anime["title"]
 
@@ -74,8 +100,8 @@ def generate_dataset(_data, _labeled_data):
                 _x_train_labelled.append(_labeled_data[anime_id])  # Adding label
                 _x_train.append(_data.pop(anime_id))  # Adding features
                 _y_train.append(anime_user_score)  # Adding class
-
-    return _x_train, _y_train, _data.values(), _x_train_labelled, _data.keys()
+    _x_test_labelled = [_labeled_data[_anime_id] for _anime_id in list(_data.keys())]
+    return _x_train, _y_train, list(_data.values()), _x_train_labelled, _x_test_labelled
 
 
 if __name__ == '__main__':
@@ -89,3 +115,21 @@ if __name__ == '__main__':
     print("Example of data:", x_train[0])
     print("Nb class:", len(np.unique(y_train)))
     print("--------------------------------------------------")
+
+    print("Training classifier algorithm")
+    clf = OneVsOneClassifier(svm.SVC(kernel='linear'))
+    clf.fit(x_train, y_train)
+
+    predictions = clf.predict(x_train)
+    print("Accuracy score:", accuracy_score(y_train, predictions))
+
+    predictions = clf.predict(x_test)
+    result = []
+    for i in range(0, len(predictions)):
+        result.append([x_test_labelled[i], predictions[i]])
+
+    print("Best fitting anime:")
+    result = sorted(result, key=lambda row: (row[1]), reverse=True)
+    for i in range(0, 10):
+        print("{}, score: {}".format(result[i][0], result[i][1]))
+
