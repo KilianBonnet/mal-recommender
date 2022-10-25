@@ -1,11 +1,13 @@
+import numpy as np
 import pandas as pd
-from sklearn.linear_model import LinearRegression
+from sklearn import svm
 
 anime_list_data_path = "./datasets/AnimeList.csv"
 user_mal_data_path = "./datasets/UserMAL.csv"
+MIN_NB_RATE = 100  # Anime with at least MIN_NB_RATE rater will be used for training.
 
 
-def get_mal_data():
+def _get_mal_data():
     anime_list_data = pd.read_csv(anime_list_data_path)
     dataset = dict()
     for anime_data in anime_list_data.iterrows():
@@ -27,31 +29,40 @@ def get_mal_data():
     return dataset
 
 
-def get_mal_basic_data():
+def extract_mal_csv():
+    print("Extracting MyAnimeList csv...")
+
     anime_list_data = pd.read_csv(anime_list_data_path)
     dataset = dict()
     _labeled_data = dict()
 
     for anime_data in anime_list_data.iterrows():
         anime = anime_data[1]
-        dataset[anime["anime_id"]] = [anime["episodes"],
-                                      anime["score"],
-                                      anime["scored_by"],
-                                      anime["popularity"],
-                                      anime["members"],
-                                      anime["favorites"],
-                                      ]
-        _labeled_data[anime["anime_id"]] = anime["title"]
+
+        # Adding only anime rated by more than MIN_NB_RATE people
+        if anime["scored_by"] >= MIN_NB_RATE:
+            dataset[anime["anime_id"]] = [anime["episodes"],
+                                          anime["score"],
+                                          anime["scored_by"],
+                                          anime["popularity"],
+                                          anime["members"],
+                                          anime["favorites"],
+                                          ]
+            _labeled_data[anime["anime_id"]] = anime["title"]
 
     return _labeled_data, dataset
 
 
-def get_recommendation_dataset(_data):
+def generate_dataset(_data, _labeled_data):
+    print("Merging MyAnimeList data with UserMAL data...")
+
     _data = _data.copy()
     user_mal_data = pd.read_csv(user_mal_data_path)
 
     _x_train = []
     _y_train = []
+
+    _x_train_labelled = []
 
     for user_anime_data in user_mal_data.iterrows():
         user_anime = user_anime_data[1]
@@ -60,34 +71,21 @@ def get_recommendation_dataset(_data):
 
         if anime_user_score != 0:
             if anime_id in _data.keys():
-                _x_train.append(_data.pop(anime_id))
-                _y_train.append(anime_user_score)
+                _x_train_labelled.append(_labeled_data[anime_id])  # Adding label
+                _x_train.append(_data.pop(anime_id))  # Adding features
+                _y_train.append(anime_user_score)  # Adding class
 
-    return _x_train, _y_train, list(_data.values())
+    return _x_train, _y_train, _data.values(), _x_train_labelled, _data.keys()
 
 
 if __name__ == '__main__':
-    labeled_data, data = get_mal_basic_data()
-    x_train, y_train, x_test = get_recommendation_dataset(data)
+    labeled_data, mal_data = extract_mal_csv()
+    x_train, y_train, x_test, x_train_labelled, x_test_labelled = generate_dataset(mal_data, labeled_data)
 
-    print("nb of train data:", len(x_train))
-    print("dim of the train data:", len(x_train[0]))
-    print("example of sample", x_train[0])
-
-    lr = LinearRegression()
-    lr.fit(x_train, y_train)
-    predict = lr.predict(x_test)
-
-    labeled_predict = []
-    data_keys = list(labeled_data.keys())
-    for i in range(0, len(predict)):
-        labeled_predict.append([labeled_data[data_keys[i]], predict[i]])
-
-    labeled_predict = sorted(labeled_predict, key=lambda x: (-x[1], x[0]))
-
-    print("============================================")
-    print("Best fitting anime:")
-
-    for i in range(0, 10):
-        best_fitting_anime = labeled_predict[i]
-        print("{}, score {}".format(best_fitting_anime[0], best_fitting_anime[1]))
+    print("--------------------------------------------------")
+    print("Train data size:", len(x_train))
+    print("Test data size:", len(x_test))
+    print("Data dimension:", len(x_train[0]))
+    print("Example of data:", x_train[0])
+    print("Nb class:", len(np.unique(y_train)))
+    print("--------------------------------------------------")
