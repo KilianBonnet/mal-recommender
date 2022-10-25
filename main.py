@@ -33,6 +33,13 @@ def _get_mal_data():
     return dataset
 
 
+def map_string(_map, _string):
+    if _string in _map.keys():
+        return _map[_string]
+    else:
+        _map[_string] = len(_map)
+
+
 def get_anime_date(anime):
     date_string = anime["aired_string"]
     if date_string == "Not available":
@@ -60,12 +67,18 @@ def extract_mal_csv():
     dataset = dict()
     _labeled_data = dict()
 
+    _producerMap = {}
+    _licensorMap = {}
+    _studioMap = {}
+    _genreMap = {}
+
     for anime_data in anime_list_data.iterrows():
         anime = anime_data[1]
         anime_date = get_anime_date(anime)
 
         # Adding only anime rated by more than MIN_NB_RATE people
         if anime["scored_by"] >= MIN_NB_RATE and anime_date != 0:
+
             dataset[anime["anime_id"]] = [anime["episodes"],
                                           anime["score"],
                                           anime["scored_by"],
