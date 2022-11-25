@@ -1,7 +1,7 @@
 # My anime list recommender
 ## Requirements
 - [Pandas](https://pypi.org/project/pandas/)
-- [SKLearn LinearRegression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html)
+- [NumPy](https://numpy.org)
 
 ## Datasets
 ### AnimeList.csv
