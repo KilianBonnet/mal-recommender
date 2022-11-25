@@ -87,6 +87,10 @@ def get_key(current_map, string):
 
 
 def generate_dataset():
+    """
+    Generate the dataset based on the MyAnimeList datas & the user personal data.
+    :return: x_train, y_train, x_test, x_train_labelled, x_test_labelled
+    """
     mal_data, mal_label = get_mal_data()
 
     print("Retrieving UserMAL csv file...")
