@@ -23,4 +23,4 @@ should work properly.
 
 #### Step 3: Replace the old UserMAL.csv by your own
 The easiest way is to simply rename your csv file "UserMAL.csv". If you want to keep a custom name, you can change the
-path in the `main.py` file.
+path in the `dataset_formatter.py` file.
