@@ -30,7 +30,7 @@ def get_mal_data():
 
         # Do not add the anime if the anime is scored by too few people or
         # has no date, rank, producer, licensor, studio, genre.
-        if anime["scored_by"] <= MIN_NB_RATE or anime_date == 0 or pd.isna(anime["rank"]) or pd.isna(anime["producer"])\
+        if anime["scored_by"] <= MIN_NB_RATE or anime_date == 0 or pd.isna(anime["rank"]) or pd.isna(anime["producer"]) \
                 or pd.isna(anime["licensor"]) or pd.isna(anime["studio"]) or pd.isna(anime["genre"]):
             continue
 
@@ -109,10 +109,31 @@ def generate_dataset():
         # Verifying if the anime has been rated and if the anime is in the formatted MAL data file
         if (anime_user_score != 0) and (anime_id in mal_data.keys()):
             x_train_labelled.append(mal_label[anime_id])  # Adding label
-            x_train.append(mal_data.pop(anime_id))        # Adding features
-            y_train.append(anime_user_score)              # Adding class
+            x_train.append(mal_data.pop(anime_id))  # Adding features
+            y_train.append(anime_user_score)  # Adding class
 
     x_test = list(mal_data.values())  # Adding to test all anime not-popped from the formatted MAL data file
     x_test_labelled = [mal_label[anime_id] for anime_id in list(mal_data.keys())]
 
     return x_train, y_train, x_test, x_train_labelled, x_test_labelled
+
+
+def one_hot(tab, nb_classes):
+    res = []
+    for e in tab:
+        new_element = []
+        for i in range(0, nb_classes):
+            if i == e:
+                new_element.append(1)
+            else:
+                new_element.append(0)
+        res.append(new_element)
+    return res
+
+
+def max_index_list(l):
+    best_index = 0
+    for k in range(1, len(l)):
+        if l[best_index] < l[k]:
+            best_index = k
+    return best_index
