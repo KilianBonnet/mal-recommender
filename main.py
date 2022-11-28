@@ -1,64 +1,51 @@
+import codecs
+
 import numpy as np
-import tensorflow as tf
+from sklearn import svm
+from sklearn.metrics import accuracy_score
+from sklearn.multiclass import OneVsOneClassifier
 
-from keras import Sequential, Input
-from keras.callbacks import EarlyStopping
-from keras.layers import Dense
-
-from dataset_formatter import generate_dataset, one_hot, max_index_list
-
-
-def accuracy(y_pred, y_true):
-    correct_prediction = tf.equal(tf.argmax(y_pred, -1), tf.argmax(y_true, -1))
-    return tf.reduce_mean(tf.cast(correct_prediction, tf.float32), axis=-1)
-
+from dataset_formatter import generate_dataset
 
 if __name__ == '__main__':
     x_train, y_train, x_test, x_train_labelled, x_test_labelled = generate_dataset()
 
     print("--------------------------------------------------")
     print("Train data size:", len(x_train))
-    print("Test data size:", len(x_test))
+    print("Data to be predicted:", len(x_test))
     print("Data dimension:", len(x_train[0]))
     print("Example of data:", x_train[0])
     print("Score covered:", len(np.unique(y_train)), "/ 11")
     print("Total trainable features:", len(x_train) * len(x_train[0]))
     print("--------------------------------------------------")
 
-    print("Preparing data to fit neuronal network...")
-    nb_classes = 11
-    y_train = one_hot(y_train, nb_classes)
+    print("Generating OneVsOneClassifier...")
+    clf = OneVsOneClassifier(svm.SVC(kernel='linear'))
 
-    print("Building neural network...")
-    model = Sequential()
-    model.add(Dense(12, activation='relu'))
-    model.add(Dense(20, activation='relu'))
-    model.add(Dense(nb_classes, activation='softmax'))
+    print("Training OneVsOneClassifier with", len(x_train), "samples...")
+    print("     [Info] It takes me 15 minutes on a Ryzen9-6900HS @4GHz.")
+    clf.fit(x_train, y_train)
 
-    model.compile(optimizer='adam', loss='categorical_crossentropy')
-
-    ourCallback = EarlyStopping(monitor='loss',
-                                min_delta=0.0001,
-                                patience=20,
-                                verbose=0,
-                                mode='auto',
-                                baseline=None,
-                                restore_best_weights=True
-                                )
-    model.fit(x_train, y_train, epochs=2000, batch_size=128, callbacks=[ourCallback])
-    y_predicted = np.array([max_index_list(l) for l in model.predict(x_test)])
-
+    print("[Alpha] Generating metrics...")
+    predictions = clf.predict(x_train)
     result = []
-    for i in range(0, len(y_predicted)):
-        result.append((x_test_labelled[i], y_predicted[i]))
+    for i in range(0, len(predictions)):
+        result.append([x_test_labelled[i], predictions[i]])
+    print("Accuracy score :", accuracy_score(y_train, predictions))
 
-    print("Best fitting anime:")
+    print("Predicting", len(x_test), "new entries...")
+    predictions = clf.predict(x_test)
+    result = []
+    for i in range(0, len(predictions)):
+        result.append([x_test_labelled[i], predictions[i]])
+
+    print("Sorting predictions by predicted rank...")
     result = sorted(result, key=lambda row: (row[1]), reverse=True)
-    for i in range(0, 10):
-        print("{}, score: {}".format(result[i][0], result[i][1]))
 
-    print()
-    print("Worst fitting anime:")
-    result = sorted(result, key=lambda row: (row[1]), reverse=False)
-    for i in range(0, 10):
-        print("{}, score: {}".format(result[i][0], result[i][1]))
+    print("Writing predictions...")
+    with codecs.open('anime_prediction.txt', 'w', "utf-8") as f:
+        for predicted_anime in result:
+            f.write("{}, score: {}".format(predicted_anime[0], predicted_anime[1]))
+            f.write('\n')
+
+    print("Done! Please check anime_prediction.txt")

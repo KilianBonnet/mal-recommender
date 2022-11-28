@@ -116,24 +116,3 @@ def generate_dataset():
     x_test_labelled = [mal_label[anime_id] for anime_id in list(mal_data.keys())]
 
     return x_train, y_train, x_test, x_train_labelled, x_test_labelled
-
-
-def one_hot(tab, nb_classes):
-    res = []
-    for e in tab:
-        new_element = []
-        for i in range(0, nb_classes):
-            if i == e:
-                new_element.append(1)
-            else:
-                new_element.append(0)
-        res.append(new_element)
-    return res
-
-
-def max_index_list(l):
-    best_index = 0
-    for k in range(1, len(l)):
-        if l[best_index] < l[k]:
-            best_index = k
-    return best_index
